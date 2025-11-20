@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web con Chat Lateral</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Efectos de flash */
+        .flash-wrong {
+            background-color: rgba(255, 0, 0, 0.5);
+            transition: background-color 0.3s;
+        }
+
+        .flash-correct {
+            background-color: rgba(0, 255, 0, 0.5);
+            transition: background-color 0.3s;
+        }
+
+        /* Notificaciones */
+        .notification {
+            background: #333;
+            color: #fff;
+            padding: 12px 20px;
+            margin-top: 10px;
+            border-radius: 8px;
+            opacity: 0.95;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            animation: fadeout 4s forwards;
+        }
+
+        @keyframes fadeout {
+            0% {
+                opacity: 0.95;
+            }
+            80% {
+                opacity: 0.95;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+        }
+
+        /* Centrar botón iniciar */
+        #start-btn {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="notifications-container" style="position: fixed; top: 20px; left: 20px; z-index: 1000;"></div>
+
+    <div id="main-content">
+        <h1>¡Adivina la Canción!</h1>
+
+        <div id="game">
+            <div id="controls">
+                <button id="start-btn">Comenzar</button>
+                <button id="play-btn" style="display:none;">Reproducir</button>
+                <button id="hint-btn" style="display:none;">Pedir pista</button>
+                <button id="skip-btn" style="display:none;">Skip canción</button>
+                <div id="hint-message"></div>
+            </div>
+
+            <input type="text" id="guess-input" list="suggestions" placeholder="Escribe tu respuesta..." style="display:none;" />
+            <datalist id="suggestions"></datalist>
+            <button id="guess-btn" style="display:none;">Adivinar</button>
+            <div id="round-info" style="display:none;"></div>
+        </div>
+
+        <div id="scoreboard">
+            <h2>Marcadores</h2>
+            <ul id="scores"></ul>
+        </div>
+
+        <div id="top-scores">
+            <h2>Top 10 Jugadores:</h2>
+            <ul id="top-list"></ul>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <ul id="messages"></ul>
+        <form id="form" action="">
+            <input id="input" autocomplete="off" placeholder="Escribe un mensaje..." />
+            <button>Enviar</button>
+        </form>
+    </div>
+
+    <audio id="audio" preload="auto" style="display:none;"></audio>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Registro del jugador
+        const playerName = prompt("Escribe tu nombre:");
+        socket.emit("registerPlayer", playerName);
+
+        // Chat
+        const messages = document.getElementById('messages');
+        const form = document.getElementById('form');
+        const input = document.getElementById('input');
+
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            if (input.value.trim()) {
+                socket.emit('chat message', input.value.trim());
+                input.value = "";
+            }
+        });
+
+        socket.on('chat message', msg => {
+            const item = document.createElement("li");
+            item.textContent = msg;
+            messages.appendChild(item);
+            messages.scrollTop = messages.scrollHeight;
+        });
+
+        // Juego
+        const startButton = document.getElementById('start-btn');
+        const playButton = document.getElementById('play-btn');
+        const hintButton = document.getElementById('hint-btn');
+        const skipButton = document.getElementById('skip-btn');
+        const guessButton = document.getElementById('guess-btn');
+        const guessInput = document.getElementById('guess-input');
+        const audio = document.getElementById('audio');
+        const datalist = document.getElementById('suggestions');
+        const hintMessage = document.getElementById('hint-message');
+        const notifications = document.getElementById('notifications-container');
+
+        let audioUnlocked = false;
+
+        function unlockAudio() { audioUnlocked = true; }
+
+        function flashEffect(type) {
+            const main = document.body;
+            main.classList.remove("flash-wrong", "flash-correct");
+            void main.offsetWidth;
+            if (type === "wrong") main.classList.add("flash-wrong");
+            if (type === "correct") main.classList.add("flash-correct");
+            setTimeout(() => main.classList.remove("flash-wrong", "flash-correct"), 3000);
+        }
+
+        function showNotification(msg) {
+            const notif = document.createElement("div");
+            notif.className = "notification";
+            notif.textContent = msg;
+            notifications.appendChild(notif);
+            setTimeout(() => notifications.removeChild(notif), 4000);
+        }
+
+        startButton.addEventListener('click', () => {
+            unlockAudio();
+            startButton.style.display = 'none';
+            playButton.style.display = 'inline-block';
+            hintButton.style.display = 'inline-block';
+            skipButton.style.display = 'inline-block';
+            guessInput.style.display = 'block';
+            guessButton.style.display = 'inline-block';
+            document.getElementById('round-info').style.display = 'block';
+            socket.emit('request hint');
+        });
+
+        guessInput.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                guessButton.click();
+            }
+        });
+
+        function playSnippet(url, duration) {
+            if (!audioUnlocked) return;
+            audio.src = url;
+            audio.currentTime = 0;
+            audio.play().catch(console.error);
+            setTimeout(() => audio.pause(), duration * 1000);
+        }
+
+        playButton.addEventListener('click', () => socket.emit('play snippet'));
+        hintButton.addEventListener('click', () => socket.emit('request hint'));
+        skipButton.addEventListener('click', () => socket.emit('skip song'));
+
+        guessButton.addEventListener('click', () => {
+            const guess = guessInput.value.trim();
+            if (!guess) return;
+            socket.emit('guess', guess);
+            guessInput.value = '';
+        });
+
+        // Eventos socket
+        socket.on('audio snippet', (url, duration) => playSnippet(url, duration));
+        socket.on('new hint', (duration, isLast) => {
+            hintMessage.textContent = isLast ? 'No hay más pistas' : `Duración de la pista: ${duration} segundos`;
+        });
+        socket.on('wrong guess', () => flashEffect("wrong"));
+        socket.on('round info', msg => {
+            if (msg.includes("¡Has acertado!")) flashEffect("correct");
+            showNotification(msg);
+        });
+
+        socket.on('scoreboard', scoreboard => {
+            const board = document.getElementById('scores');
+            board.innerHTML = '';
+            scoreboard.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.name}: ${p.points} pts`;
+                board.appendChild(li);
+            });
+        });
+
+        socket.on('topScores', top10 => {
+            const list = document.getElementById('top-list');
+            list.innerHTML = '';
+            top10.forEach(p => {
+                const li = document.createElement('li');
+                li.textContent = `${p.name}: ${p.points} pts`;
+                list.appendChild(li);
+            });
+        });
+
+        // Autocompletado
+        let debounceTimer;
+        guessInput.addEventListener('input', () => {
+            const query = guessInput.value.trim();
+            if (!query) return;
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(async () => {
+                try {
+                    const res = await fetch(`/song-suggestions?query=${encodeURIComponent(query)}`);
+                    const suggestions = await res.json();
+                    datalist.innerHTML = '';
+                    suggestions.forEach(song => {
+                        const option = document.createElement('option');
+                        option.value = song.title;
+                        datalist.appendChild(option);
+                    });
+                } catch (err) { console.error(err); }
+            }, 300);
+        });
+    </script>
+</body>
+
+</html>

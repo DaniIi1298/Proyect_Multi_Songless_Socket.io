@@ -1,0 +1,272 @@
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+    background-color: #fff;
+    min-height: 100vh;
+}
+
+/* Contenido principal ocupa todo el espacio excepto el chat */
+#main-content {
+    flex: 1;
+    padding: 2rem;
+    overflow-y: auto;
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+    color: #7e14a7;
+}
+
+/* Panel de chat lateral */
+#chat-container {
+    width: 300px;
+    border-left: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    flex-shrink: 0;
+}
+
+#messages {
+    list-style: none;
+    padding: 1rem;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+    background: #f5f5f5;
+}
+
+#messages li {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 5px;
+}
+
+#messages li:nth-child(odd) {
+    background: #e0e0e0;
+}
+
+#form {
+    display: flex;
+    padding: 0.5rem;
+    border-top: 1px solid #ccc;
+    background: #fff;
+}
+
+#input {
+    flex: 1;
+    padding: 0.5rem 1rem;
+    border: 1px solid #ccc;
+    border-radius: 20px;
+    margin-right: 0.5rem;
+}
+
+#form button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 5px;
+    background: #333;
+    color: #fff;
+    cursor: pointer;
+}
+
+#form button:hover {
+    background: #555;
+}
+
+/* ---- ZONA DEL JUEGO ---- */
+#game {
+    background: rgba(243, 216, 255, 0.811);
+    padding: 25px;
+    border-radius: 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+/* ---- BOTONES ---- */
+#controls button,
+#guess-btn {
+    background: linear-gradient(135deg, #6a00ff, #9d4dff);
+    border: none;
+    padding: 12px 22px;
+    margin: 8px;
+    color: white;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: 0.25s;
+    font-size: 15px;
+}
+#guess-btn {
+    padding: 16px 28px;
+    margin-top: 18px;
+    font-size: 20px;
+}
+
+#controls button:hover,
+#guess-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* ---- INPUT DE RESPUESTA ---- */
+#guess-input {
+    width: 90%;
+    padding: 12px 15px;
+    margin-top: 15px;
+    border-radius: 10px;
+    border: 2px solid #9d4dff;
+    outline: none;
+    font-size: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    color: #8b28c9;
+    backdrop-filter: blur(6px);
+    transition: 0.25s;
+}
+
+#guess-input:focus {
+    border-color: #c8a1ff;
+    box-shadow: 0 0 8px rgba(157, 77, 255, 0.7);
+}
+
+#guess-input::placeholder {
+    color: #8b28c9;
+}
+
+/* ---- ZONA DE PISTAS ---- */
+#hint-message {
+    margin-top: 20px;
+    font-size: 14px;
+    opacity: 0.9;
+    color: #6a00ff;
+}
+
+/* ---- INFORMACIÓN DE RONDA ---- */
+#round-info {
+    margin-top: 15px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* ---- MARCADOR ---- */
+#scoreboard,
+#top-scores {
+    background: rgba(243, 216, 255, 0.811);
+    padding: 25px;
+    border-radius: 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.36);
+    margin-top: 30px;
+}
+
+#scoreboard h2,
+#top-scores h2 {
+    font-size: 22px;
+    margin-bottom: 15px;
+}
+
+#scores,
+#top-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#scores li,
+#top-list li {
+    font-size: 16px;
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(234, 187, 254, 0.811);
+    border-radius: 10px;
+}
+
+/* EXTRAS */
+#controls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+#start-btn {
+    display: inline-block;
+    margin: 40px auto;
+}
+
+#play-btn,
+#hint-btn,
+#skip-btn,
+#guess-input,
+#guess-btn,
+#round-info {
+    display: none;
+}
+
+/* PARPADEO DE BODY */
+body.flash-wrong {
+    animation: flashWrong 0.3s alternate 6;
+}
+body.flash-correct {
+    animation: flashCorrect 0.3s alternate 6;
+}
+
+@keyframes flashWrong {
+    from { background-color: #fff; }
+    to { background-color: rgb(255, 131, 131); }
+}
+@keyframes flashCorrect {
+    from { background-color: #fff; }
+    to { background-color: rgb(135, 192, 135); }
+}
+
+/* NOTIFICACIONES */
+#notifications-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 1000;
+    width: auto;
+    max-width: 300px;
+}
+.notification {
+    display: inline-block;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    margin-top: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.notification.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    body {
+        flex-direction: column; /* apilar juego + chat */
+    }
+
+    #main-content {
+        max-width: 100%;
+        padding: 1rem;
+    }
+
+    #chat-container {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #ccc;
+        height: 300px;
+        margin-top: 1rem;
+    }
+
+    #messages {
+        padding: 0.5rem;
+    }
+}
